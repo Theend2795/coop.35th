@@ -1,0 +1,550 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>โปรแกรมคำนวณเงินปันผลและเงินเฉลี่ยคืนสหกรณ์</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- Google Font: Kanit -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Kanit', 'sans-serif'],
+                    },
+                    colors: {
+                        emerald: {
+                            50: '#f0fdf4',
+                            100: '#dcfce7',
+                            500: '#10b981',
+                            600: '#059669',
+                            700: '#047857',
+                        },
+                        navy: {
+                            800: '#1e293b',
+                            900: '#0f172a',
+                            950: '#020617',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            font-family: 'Kanit', sans-serif;
+            background-color: #f8fafc;
+            color: #1e293b;
+        }
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: #f1f5f9;
+            border-radius: 4px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 4px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+        input[type=number]::-webkit-inner-spin-button, 
+        input[type=number]::-webkit-outer-spin-button { 
+            -webkit-appearance: none; 
+            margin: 0; 
+        }
+        input[type=number] {
+            -moz-appearance: textfield;
+        }
+        @media print {
+            .no-print {
+                display: none !important;
+            }
+            body {
+                background: white;
+            }
+        }
+    </style>
+</head>
+<body class="min-h-screen bg-slate-50 flex flex-col justify-between">
+
+    <!-- Header / Navbar -->
+    <header class="bg-gradient-to-r from-navy-950 via-navy-900 to-emerald-950 text-white sticky top-0 z-40 shadow-md border-b border-emerald-500/20 no-print">
+        <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-3.5 flex justify-between items-center">
+            <div class="flex items-center space-x-3">
+                <div class="p-2 bg-emerald-500/20 rounded-xl border border-emerald-500/30 text-emerald-400">
+                    <i data-lucide="calculator" class="w-6 h-6"></i>
+                </div>
+                <div>
+                    <h1 class="text-lg sm:text-xl font-bold tracking-tight text-white flex items-center gap-2">
+                        โปรแกรมคำนวณเงินปันผลและเงินเฉลี่ยคืน
+                        <span class="text-[10px] font-normal px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">สหกรณ์</span>
+                    </h1>
+                    <p class="text-xs text-slate-400 hidden sm:block">คำนวณตามสูตรถัวเฉลี่ยรายเดือนมาตรฐานสหกรณ์</p>
+                </div>
+            </div>
+
+            <!-- Header Action Buttons -->
+            <div class="flex items-center gap-2">
+                <button onclick="loadSampleCoopData()" class="px-3 py-1.5 text-xs font-medium rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 transition flex items-center gap-1.5">
+                    <i data-lucide="sparkles" class="w-3.5 h-3.5"></i>
+                    <span class="hidden sm:inline">ตัวอย่างข้อมูล</span>
+                </button>
+                <button onclick="saveToLocalStorage()" class="px-3 py-1.5 text-xs font-medium rounded-lg bg-navy-800 hover:bg-slate-700 text-slate-200 border border-slate-700 transition flex items-center gap-1.5">
+                    <i data-lucide="save" class="w-3.5 h-3.5 text-blue-400"></i>
+                    <span class="hidden sm:inline">บันทึก</span>
+                </button>
+                <button onclick="window.print()" class="px-3 py-1.5 text-xs font-medium rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 transition flex items-center gap-1.5">
+                    <i data-lucide="printer" class="w-3.5 h-3.5"></i>
+                    <span class="hidden sm:inline">พิมพ์/PDF</span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Notification Toast -->
+    <div id="toast" class="fixed bottom-5 right-5 z-50 transform translate-y-20 opacity-0 transition-all duration-300 bg-navy-900 text-white text-xs px-4 py-3 rounded-xl shadow-xl flex items-center gap-2 border border-slate-700 pointer-events-none">
+        <i data-lucide="check-circle-2" class="w-4 h-4 text-emerald-400"></i>
+        <span id="toastMsg">ทำรายการสำเร็จ</span>
+    </div>
+
+    <!-- Main Container -->
+    <main class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-6 w-full grow space-y-6">
+
+        <!-- ================= SECTION 1: TOP CONFIG ================= -->
+        <section class="bg-white rounded-2xl p-5 shadow-sm border border-slate-200/80 space-y-3">
+            <div class="flex items-center justify-between border-b border-slate-100 pb-2.5">
+                <h2 class="text-sm font-bold text-slate-800 flex items-center gap-2">
+                    <i data-lucide="settings" class="w-4 h-4 text-emerald-600"></i>
+                    ส่วนที่ 1: กำหนดอัตราผลตอบแทนสหกรณ์
+                </h2>
+                <span class="text-xs text-slate-400">ระบุ % ตามประกาศสหกรณ์</span>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <!-- Dividend Rate % -->
+                <div class="bg-slate-50 p-3.5 rounded-xl border border-slate-200">
+                    <label class="block text-xs font-semibold text-slate-700 mb-1">อัตราเงินปันผล (% ต่อปี)</label>
+                    <div class="relative">
+                        <input type="number" id="divRate" min="0" max="100" step="0.05" value="5.00" oninput="calculateAll()"
+                            class="w-full pl-3 pr-8 py-2 text-base rounded-lg border border-slate-300 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100 font-bold text-slate-800 bg-white">
+                        <span class="absolute right-3 top-2.5 text-sm font-medium text-slate-400">%</span>
+                    </div>
+                </div>
+
+                <!-- Patronage Rebate Rate % -->
+                <div class="bg-slate-50 p-3.5 rounded-xl border border-slate-200">
+                    <label class="block text-xs font-semibold text-slate-700 mb-1">อัตราเงินเฉลี่ยคืน (% ของดอกเบี้ยจ่าย)</label>
+                    <div class="relative">
+                        <input type="number" id="rebateRate" min="0" max="100" step="0.05" value="10.00" oninput="calculateAll()"
+                            class="w-full pl-3 pr-8 py-2 text-base rounded-lg border border-slate-300 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100 font-bold text-slate-800 bg-white">
+                        <span class="absolute right-3 top-2.5 text-sm font-medium text-slate-400">%</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ================= SECTION 2: INPUT & MONTHLY CALCULATION TABLE ================= -->
+        <section class="bg-white rounded-2xl p-5 shadow-sm border border-slate-200/80 space-y-4">
+            <div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 pb-2.5">
+                <div>
+                    <h2 class="text-sm font-bold text-slate-800 flex items-center gap-2">
+                        <i data-lucide="calendar-range" class="w-4 h-4 text-emerald-600"></i>
+                        ส่วนที่ 2: กรอกข้อมูลและตารางคำนวณรายเดือน (ม.ค. - ธ.ค.)
+                    </h2>
+                </div>
+
+                <!-- Quick Fill Helpers -->
+                <div class="flex items-center gap-2 no-print">
+                    <button onclick="quickFillShares()" class="px-2.5 py-1 text-xs font-medium rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-700 transition flex items-center gap-1 border border-emerald-200">
+                        <i data-lucide="copy" class="w-3 h-3"></i> หุ้นส่งเท่ากันทุกเดือน
+                    </button>
+                    <button onclick="quickFillInterest()" class="px-2.5 py-1 text-xs font-medium rounded-lg bg-amber-50 hover:bg-amber-100 text-amber-700 transition flex items-center gap-1 border border-amber-200">
+                        <i data-lucide="copy" class="w-3 h-3"></i> ดอกเบี้ยเท่ากันทุกเดือน
+                    </button>
+                    <button onclick="clearAllInputs()" class="px-2 py-1 text-xs font-medium rounded-lg bg-red-50 hover:bg-red-100 text-red-600 transition flex items-center gap-1 border border-red-200">
+                        <i data-lucide="trash-2" class="w-3 h-3"></i> ล้างข้อมูล
+                    </button>
+                </div>
+            </div>
+
+            <!-- Starting Share Capital Input -->
+            <div class="bg-emerald-50/70 p-4 rounded-xl border border-emerald-200/80 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                <div>
+                    <span class="text-sm font-bold text-emerald-950 flex items-center gap-1.5">
+                        <i data-lucide="coins" class="w-4 h-4 text-emerald-600"></i>
+                        ค่าหุ้นยกมาต้นปี (ก่อน 1 มกราคม)
+                    </span>
+                    <p class="text-xs text-emerald-700 mt-0.5">นำไปคิดเงินปันผลเต็มปี (น้ำหนัก 12/12)</p>
+                </div>
+                <div class="relative w-full sm:w-52">
+                    <input type="number" id="startShares" min="0" step="1000" value="100000" oninput="calculateAll()"
+                        class="w-full pl-3 pr-10 py-2 text-sm rounded-lg border border-emerald-300 focus:border-emerald-600 font-bold text-emerald-950 text-right bg-white shadow-sm">
+                    <span class="absolute right-3 top-2.5 text-xs text-emerald-600 font-medium">บาท</span>
+                </div>
+            </div>
+
+            <!-- Combined Monthly Input & Calculation Table -->
+            <div class="overflow-x-auto custom-scrollbar border border-slate-200 rounded-xl">
+                <table class="w-full text-left border-collapse text-xs">
+                    <thead>
+                        <tr class="bg-slate-100/90 text-slate-700 font-bold border-b border-slate-200">
+                            <th class="py-3 px-3 w-28">เดือน</th>
+                            <th class="py-3 px-3 w-40">ค่าหุ้นส่งเพิ่ม/เดือน (บาท)</th>
+                            <th class="py-3 px-3 w-40">ดอกเบี้ยจ่าย/เดือน (บาท)</th>
+                            <th class="py-3 px-3 text-center w-28">น้ำหนักถ่วง</th>
+                            <th class="py-3 px-3 text-right text-blue-700 bg-blue-50/50">เงินปันผลที่ได้ (บาท)</th>
+                            <th class="py-3 px-3 text-right text-amber-700 bg-amber-50/50">เงินเฉลี่ยคืนที่ได้ (บาท)</th>
+                        </tr>
+                    </thead>
+                    <tbody id="monthlyCombinedTableBody" class="divide-y divide-slate-100 bg-white">
+                        <!-- Dynamic Input & Calc Rows -->
+                    </tbody>
+                    <tfoot id="monthlyCombinedTableFoot" class="bg-slate-50 font-bold border-t-2 border-slate-200 text-slate-800">
+                        <!-- Dynamic Totals Footer -->
+                    </tfoot>
+                </table>
+            </div>
+        </section>
+
+        <!-- ================= SECTION 3: BOTTOM SUMMARY & BREAKDOWN ================= -->
+        <section class="bg-slate-900 text-white rounded-2xl p-6 shadow-md space-y-6 border border-slate-800">
+            <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+                <h2 class="text-base font-bold text-white flex items-center gap-2">
+                    <i data-lucide="receipt-text" class="w-5 h-5 text-emerald-400"></i>
+                    ส่วนที่ 3: สรุปผลการคำนวณ (เงินปันผล + เงินเฉลี่ยคืน)
+                </h2>
+                <span class="text-xs text-emerald-400 font-medium bg-emerald-500/10 px-2.5 py-1 rounded-full border border-emerald-500/20">คำนวณอัตโนมัติ</span>
+            </div>
+
+            <!-- KPI Cards Grid -->
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <!-- Total Dividend Card -->
+                <div class="bg-slate-800/80 rounded-xl p-4 border border-slate-700/60 space-y-1">
+                    <span class="text-xs font-medium text-slate-300 flex items-center justify-between">
+                        รวมเงินปันผลทั้งสิ้น
+                        <i data-lucide="piggy-bank" class="w-4 h-4 text-blue-400"></i>
+                    </span>
+                    <div id="cardDivTotal" class="text-2xl font-bold text-blue-400">฿0.00</div>
+                    <p class="text-[11px] text-slate-400 pt-1 border-t border-slate-700/50 flex justify-between">
+                        <span>ปันผลหุ้นต้นปี + ส่งเพิ่ม:</span>
+                        <span id="cardDivRateShow" class="text-slate-200 font-semibold">5.00%</span>
+                    </p>
+                </div>
+
+                <!-- Total Patronage Rebate Card -->
+                <div class="bg-slate-800/80 rounded-xl p-4 border border-slate-700/60 space-y-1">
+                    <span class="text-xs font-medium text-slate-300 flex items-center justify-between">
+                        รวมเงินเฉลี่ยคืนทั้งสิ้น
+                        <i data-lucide="hand-coins" class="w-4 h-4 text-amber-400"></i>
+                    </span>
+                    <div id="cardRebateTotal" class="text-2xl font-bold text-amber-400">฿0.00</div>
+                    <p class="text-[11px] text-slate-400 pt-1 border-t border-slate-700/50 flex justify-between">
+                        <span>เฉลี่ยคืนจากดอกเบี้ย:</span>
+                        <span id="cardRebateRateShow" class="text-slate-200 font-semibold">10.00%</span>
+                    </p>
+                </div>
+
+                <!-- Net Total Return Card -->
+                <div class="bg-gradient-to-br from-emerald-950 to-slate-800 rounded-xl p-4 border border-emerald-500/40 space-y-1">
+                    <span class="text-xs font-medium text-emerald-300 flex items-center justify-between">
+                        รวมเงินรับสุทธิ (ปันผล + เฉลี่ยคืน)
+                        <i data-lucide="wallet" class="w-4 h-4 text-emerald-400"></i>
+                    </span>
+                    <div id="cardTotalReturn" class="text-2xl font-bold text-emerald-400">฿0.00</div>
+                    <p class="text-[11px] text-slate-300 pt-1 border-t border-emerald-500/30 flex justify-between">
+                        <span>ผลตอบแทนรวมเทียบหุ้นต้นปี:</span>
+                        <span id="cardOverallYield" class="text-emerald-300 font-semibold">0.00%</span>
+                    </p>
+                </div>
+            </div>
+
+            <!-- Final Calculation Breakdown Box -->
+            <div class="bg-slate-800/60 rounded-xl p-4 border border-slate-700/60 space-y-3">
+                <h3 class="text-xs font-bold text-emerald-400 uppercase tracking-wider flex items-center gap-1.5">
+                    <i data-lucide="file-spread-sheet" class="w-4 h-4"></i>
+                    สรุปรายละเอียดการคำนวณแต่ละส่วน
+                </h3>
+                <div class="space-y-2 text-xs divide-y divide-slate-700/50">
+                    <div class="flex justify-between items-center pt-1">
+                        <span class="text-slate-300">1. เงินปันผลจากหุ้นยกมาต้นปี <span class="text-slate-500">(หุ้นต้นปี × %ปันผล × 12/12)</span></span>
+                        <span id="breakdownDivStart" class="font-bold text-blue-300">฿0.00</span>
+                    </div>
+                    <div class="flex justify-between items-center pt-2">
+                        <span class="text-slate-300">2. เงินปันผลจากหุ้นส่งเพิ่มระหว่างปี <span class="text-slate-500">(ผลรวมคำนวณถ่วงน้ำหนัก ม.ค.-ธ.ค.)</span></span>
+                        <span id="breakdownDivMonthly" class="font-bold text-blue-300">฿0.00</span>
+                    </div>
+                    <div class="flex justify-between items-center pt-2">
+                        <span class="text-slate-300">3. เงินเฉลี่ยคืนจากดอกเบี้ยจ่ายรวม <span class="text-slate-500">(ดอกเบี้ยจ่ายรวม × %เฉลี่ยคืน)</span></span>
+                        <span id="breakdownRebate" class="font-bold text-amber-300">฿0.00</span>
+                    </div>
+                    <div class="flex justify-between items-center pt-2 text-sm font-bold border-t border-slate-600">
+                        <span class="text-emerald-300">รวมรับสุทธิทั้งสิ้น (1 + 2 + 3)</span>
+                        <span id="breakdownNetTotal" class="text-emerald-400 text-base">฿0.00</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-white border-t border-slate-200 py-4 mt-8 no-print">
+        <div class="max-w-5xl mx-auto px-4 text-center text-xs text-slate-400 flex flex-col sm:flex-row justify-between items-center gap-2">
+            <span>โปรแกรมคำนวณเงินปันผลและเงินเฉลี่ยคืนสหกรณ์</span>
+            <span class="flex items-center gap-1 text-slate-400">
+                <i data-lucide="shield-check" class="w-3.5 h-3.5 text-emerald-500"></i> คำนวณตามหลักเกณฑ์การถ่วงน้ำหนักของสหกรณ์
+            </span>
+        </div>
+    </footer>
+
+    <!-- JavaScript Logic -->
+    <script>
+        const MONTH_NAMES = [
+            'มกราคม', 'กุมภาพันธ์', 'มีนาคม', 'เมษายน', 
+            'พฤษภาคม', 'มิถุนายน', 'กรกฎาคม', 'สิงหาคม', 
+            'กันยายน', 'ตุลาคม', 'พฤศจิกายน', 'ธันวาคม'
+        ];
+
+        const MONTH_SHORT_NAMES = [
+            'ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 
+            'พ.ค.', 'มิ.ย.', 'ก.ค.', 'ส.ค.', 
+            'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.'
+        ];
+
+        // Weight Factors for Jan-Dec: 11/12 down to 0/12
+        const MONTHLY_WEIGHTS = [11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0];
+
+        let monthlySharesAdded = new Array(12).fill(0);
+        let monthlyInterestPaid = new Array(12).fill(0);
+
+        // Initialize Lucide Icons
+        lucide.createIcons();
+
+        // Render Integrated Monthly Input & Calculation Rows
+        function renderMonthlyTableRows() {
+            const tbody = document.getElementById('monthlyCombinedTableBody');
+            tbody.innerHTML = '';
+
+            MONTH_SHORT_NAMES.forEach((month, idx) => {
+                const weightText = `${MONTHLY_WEIGHTS[idx]}/12`;
+                const tr = document.createElement('tr');
+                tr.className = "hover:bg-slate-50 transition-colors";
+
+                tr.innerHTML = `
+                    <td class="py-2 px-3 font-semibold text-slate-800">${month} <span class="text-[10px] text-slate-400 font-normal hidden sm:inline">(${MONTH_NAMES[idx]})</span></td>
+                    <td class="py-2 px-3">
+                        <input type="number" step="any" min="0" id="m_share_${idx}" value="${monthlySharesAdded[idx] || ''}" placeholder="0"
+                            oninput="updateSingleShare(${idx}, this.value)"
+                            class="w-full px-2.5 py-1 text-xs rounded-lg border border-slate-200 focus:border-emerald-500 font-medium text-slate-800 bg-white shadow-xs">
+                    </td>
+                    <td class="py-2 px-3">
+                        <input type="number" step="any" min="0" id="m_interest_${idx}" value="${monthlyInterestPaid[idx] || ''}" placeholder="0"
+                            oninput="updateSingleInterest(${idx}, this.value)"
+                            class="w-full px-2.5 py-1 text-xs rounded-lg border border-slate-200 focus:border-emerald-500 font-medium text-amber-800 bg-white shadow-xs">
+                    </td>
+                    <td class="py-2 px-3 text-center text-emerald-700 font-bold font-mono bg-emerald-50/30">${weightText}</td>
+                    <td class="py-2 px-3 text-right text-blue-700 font-semibold bg-blue-50/20" id="res_div_${idx}">฿0.00</td>
+                    <td class="py-2 px-3 text-right text-amber-700 font-semibold bg-amber-50/20" id="res_rebate_${idx}">฿0.00</td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function updateSingleShare(idx, val) {
+            monthlySharesAdded[idx] = parseFloat(val) || 0;
+            calculateAll();
+        }
+
+        function updateSingleInterest(idx, val) {
+            monthlyInterestPaid[idx] = parseFloat(val) || 0;
+            calculateAll();
+        }
+
+        // Quick Fill Helper
+        function quickFillShares() {
+            const sampleVal = prompt('ระบุจำนวนค่าหุ้นส่งเพิ่มเท่ากันทุกเดือน (บาท):', '2000');
+            if (sampleVal !== null) {
+                const addVal = parseFloat(sampleVal) || 0;
+                monthlySharesAdded = new Array(12).fill(addVal);
+                renderMonthlyTableRows();
+                calculateAll();
+                showToast('อัปเดตหุ้นส่งเพิ่มรายเดือนเรียบร้อย');
+            }
+        }
+
+        function quickFillInterest() {
+            const sampleVal = prompt('ระบุจำนวนดอกเบี้ยจ่ายเท่ากันทุกเดือน (บาท):', '800');
+            if (sampleVal !== null) {
+                const val = parseFloat(sampleVal) || 0;
+                monthlyInterestPaid = new Array(12).fill(val);
+                renderMonthlyTableRows();
+                calculateAll();
+                showToast('อัปเดตดอกเบี้ยจ่ายเท่ากันทุกเดือนเรียบร้อย');
+            }
+        }
+
+        function clearAllInputs() {
+            document.getElementById('startShares').value = 0;
+            monthlySharesAdded = new Array(12).fill(0);
+            monthlyInterestPaid = new Array(12).fill(0);
+            renderMonthlyTableRows();
+            calculateAll();
+            showToast('ล้างข้อมูลทั้งหมดเรียบร้อยแล้ว');
+        }
+
+        // Load Sample Coop Data
+        function loadSampleCoopData() {
+            document.getElementById('startShares').value = 100000;
+            document.getElementById('divRate').value = 5.00;
+            document.getElementById('rebateRate').value = 10.00;
+
+            monthlySharesAdded = new Array(12).fill(2000);
+            monthlyInterestPaid = [1200, 1180, 1160, 1140, 1120, 1100, 1080, 1060, 1040, 1020, 1000, 980];
+
+            renderMonthlyTableRows();
+            calculateAll();
+            showToast('โหลดข้อมูลตัวอย่างสหกรณ์เรียบร้อย');
+        }
+
+        // Main Calculation
+        function calculateAll() {
+            const divRate = (parseFloat(document.getElementById('divRate').value) || 0) / 100;
+            const rebateRate = (parseFloat(document.getElementById('rebateRate').value) || 0) / 100;
+            const startShares = parseFloat(document.getElementById('startShares').value) || 0;
+
+            // 1. Dividend Start of Year: StartStock * (DividendRate / 100) * (12 / 12)
+            const divStartOfYear = startShares * divRate * (12 / 12);
+
+            let sumMonthlyShare = 0;
+            let sumMonthlyInterest = 0;
+            let sumMonthlyDividend = 0;
+            let sumMonthlyRebate = 0;
+
+            // 2. Calculate each month
+            for (let i = 0; i < 12; i++) {
+                const share = monthlySharesAdded[i] || 0;
+                const interest = monthlyInterestPaid[i] || 0;
+                const weight = MONTHLY_WEIGHTS[i];
+
+                // Monthly Dividend = MonthlyShare * (DividendRate / 100) * (m / 12)
+                const monthDiv = share * divRate * (weight / 12);
+
+                // Monthly Rebate = MonthlyInterest * (RebateRate / 100)
+                const monthRebate = interest * rebateRate;
+
+                sumMonthlyShare += share;
+                sumMonthlyInterest += interest;
+                sumMonthlyDividend += monthDiv;
+                sumMonthlyRebate += monthRebate;
+
+                // Update Table Row Calculated Columns
+                const elDiv = document.getElementById(`res_div_${i}`);
+                const elRebate = document.getElementById(`res_rebate_${i}`);
+                if (elDiv) elDiv.textContent = `฿${formatNum(monthDiv)}`;
+                if (elRebate) elRebate.textContent = `฿${formatNum(monthRebate)}`;
+            }
+
+            // Totals
+            const totalDividend = divStartOfYear + sumMonthlyDividend;
+            const totalRebate = sumMonthlyRebate;
+            const netTotal = totalDividend + totalRebate;
+
+            // Yield Rate relative to start stock
+            const overallYield = startShares > 0 ? (netTotal / startShares) * 100 : 0;
+
+            // Update Table Foot
+            const tfoot = document.getElementById('monthlyCombinedTableFoot');
+            tfoot.innerHTML = `
+                <tr>
+                    <td class="py-2.5 px-3">รวมผลรวมทั้งปี</td>
+                    <td class="py-2.5 px-3">฿${formatNum(sumMonthlyShare)}</td>
+                    <td class="py-2.5 px-3">฿${formatNum(sumMonthlyInterest)}</td>
+                    <td class="py-2.5 px-3 text-center text-slate-400">-</td>
+                    <td class="py-2.5 px-3 text-right text-blue-700 bg-blue-50/50">฿${formatNum(sumMonthlyDividend)}</td>
+                    <td class="py-2.5 px-3 text-right text-amber-700 bg-amber-50/50">฿${formatNum(sumMonthlyRebate)}</td>
+                </tr>
+            `;
+
+            // Update KPI Cards
+            document.getElementById('cardDivTotal').textContent = `฿${formatNum(totalDividend)}`;
+            document.getElementById('cardDivRateShow').textContent = `${(divRate * 100).toFixed(2)}%`;
+
+            document.getElementById('cardRebateTotal').textContent = `฿${formatNum(totalRebate)}`;
+            document.getElementById('cardRebateRateShow').textContent = `${(rebateRate * 100).toFixed(2)}%`;
+
+            document.getElementById('cardTotalReturn').textContent = `฿${formatNum(netTotal)}`;
+            document.getElementById('cardOverallYield').textContent = `${overallYield.toFixed(2)}%`;
+
+            // Update Final Breakdown Box
+            document.getElementById('breakdownDivStart').textContent = `฿${formatNum(divStartOfYear)}`;
+            document.getElementById('breakdownDivMonthly').textContent = `฿${formatNum(sumMonthlyDividend)}`;
+            document.getElementById('breakdownRebate').textContent = `฿${formatNum(totalRebate)}`;
+            document.getElementById('breakdownNetTotal').textContent = `฿${formatNum(netTotal)}`;
+        }
+
+        // LocalStorage Features
+        function saveToLocalStorage() {
+            const dataToSave = {
+                startShares: document.getElementById('startShares').value,
+                divRate: document.getElementById('divRate').value,
+                rebateRate: document.getElementById('rebateRate').value,
+                monthlySharesAdded: monthlySharesAdded,
+                monthlyInterestPaid: monthlyInterestPaid
+            };
+            localStorage.setItem('coop_calculator_data', JSON.stringify(dataToSave));
+            showToast('บันทึกข้อมูลเรียบร้อยแล้ว');
+        }
+
+        function loadFromLocalStorage() {
+            const saved = localStorage.getItem('coop_calculator_data');
+            if (saved) {
+                try {
+                    const parsed = JSON.parse(saved);
+                    document.getElementById('startShares').value = parsed.startShares ?? 100000;
+                    document.getElementById('divRate').value = parsed.divRate ?? 5.00;
+                    document.getElementById('rebateRate').value = parsed.rebateRate ?? 10.00;
+                    monthlySharesAdded = parsed.monthlySharesAdded || new Array(12).fill(0);
+                    monthlyInterestPaid = parsed.monthlyInterestPaid || new Array(12).fill(0);
+                } catch(e) {
+                    console.error("Load error", e);
+                }
+            }
+        }
+
+        // Helper Toast
+        function showToast(message) {
+            const toast = document.getElementById('toast');
+            const msg = document.getElementById('toastMsg');
+            msg.textContent = message;
+            toast.classList.remove('translate-y-20', 'opacity-0');
+            setTimeout(() => {
+                toast.classList.add('translate-y-20', 'opacity-0');
+            }, 2500);
+        }
+
+        // Number Formatter
+        function formatNum(num) {
+            return new Intl.NumberFormat('th-TH', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(num || 0);
+        }
+
+        // Init App
+        window.onload = function() {
+            loadFromLocalStorage();
+            renderMonthlyTableRows();
+            calculateAll();
+        };
+    </script>
+</body>
+</html>
